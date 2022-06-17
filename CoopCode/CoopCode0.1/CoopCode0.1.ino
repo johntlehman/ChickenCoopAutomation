@@ -1,13 +1,3 @@
-//CoopCode v0
-//Code turns on lights in a chicken coop when natural daylight <14 hours
-//Max light burntime is 2 hours
-//Lights turn on before sunrise
-//Solar panel is used to determine day/night
-//System is powered by solar panel, charge controller, and battery
-//Behavior
-//System started when it's dark - skips next light on cycle and resumes the following morning
-//System started when it's light - calculates light-on time at sunset (delay from sunset)
-
 #include <Wire.h> //Used for LED stick
 #include "Qwiic_LED_Stick.h" // Click here to get the library: http://librarymanager/All#SparkFun_Qwiic_LED_Stick
 #include <LowPower.h> //Load library for power saving
@@ -219,7 +209,6 @@ void lowPowerMode(){
     readBatteryVoltage();
     Serial.print("LowPowerMode, Battery Voltage: ");
     Serial.println(batteryVoltage);
-
   }
   
 }
