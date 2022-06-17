@@ -19,3 +19,6 @@ Requirements:
 ### Behavior
 * If system started when it's dark - skips next light on cycle and resumes the following morning
 * System started when it's light - calculates light-on time at sunset (delay from sunset)
+
+# Develop!
+This is just a test of my develop branch
