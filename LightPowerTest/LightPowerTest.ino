@@ -32,19 +32,23 @@ int LEDRed = 100;
 int LEDGreen = 0;
 int LEDBlue = 0;
 
-    //Turn on LED
-    for(int i = 0; i < 4; i++) {
-      digitalWrite(LED_BUILTIN, LOW);   // turn the board LED on (HIGH is the voltage level)
-      LEDGreen = LEDRed*0.83; //Ratio for Orange
-      LEDBlue = LEDRed*0.377;
-      LEDStick.setLEDColor(LEDRed, LEDGreen, LEDBlue); //Turn on LED stick
-      delay(10000);
-      LEDStick.LEDOff();
-      delay(2000);
+  //Turn on LED
+  for(int i = 0; i < 4; i++) {
+    digitalWrite(LED_BUILTIN, LOW);   // turn the board LED on (HIGH is the voltage level)
+    LEDGreen = LEDRed*0.83; //Ratio for Orange
+    LEDBlue = LEDRed*0.377;
+    LEDStick.setLEDColor(LEDRed, LEDGreen, LEDBlue); //Turn on LED stick
+    delay(10000);
+    LEDStick.LEDOff();
+    LEDStick.end()
+    Wire.end()
+    delay(2000);
+    Wire.begin()
+    LEDStick.begin()
 
-      LEDRed = LEDRed + 50;
+    LEDRed = LEDRed + 50;
 
-      }
+  }
 
 }
   
