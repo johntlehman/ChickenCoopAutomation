@@ -1,0 +1,6 @@
+{
+    "board": "arduino:avr:uno",
+    "port": "/dev/tty.usbserial-110",
+    "sketch": "CoopCode/CoopCode.ino",
+    "programmer": "arduino:arduinoisp"
+}

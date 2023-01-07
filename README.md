@@ -1,6 +1,4 @@
-# CoopCode v0.1 - The Automated Chicken Coop
-
-First GitHub Commit of Coop Code.
+# CoopCode - The Automated Chicken Coop
 
 ### Overview
 Intention of automated chicken coop is to provide an off-grid lighting solution for a chicken house. Lights should go on shortly before dawn and turn off when it's sufficiently light outside.
@@ -19,7 +17,3 @@ Requirements:
 ### Behavior
 * If system started when it's dark - skips next light on cycle and resumes the following morning
 * System started when it's light - calculates light-on time at sunset (delay from sunset)
-
-# Develop!
-This is just a test of my develop branch
-This is my second change to the develop branch.
