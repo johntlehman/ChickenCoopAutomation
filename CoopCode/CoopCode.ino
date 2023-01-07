@@ -33,7 +33,6 @@ void setup() {
   Wire.begin(); //needed for LED stick
   LEDStick.begin(); //needed for LED stick
   pinMode(LED_BUILTIN, OUTPUT); //initialize digital pin LED_BUILTIN as an output.
-  
 }
 
 //Daily loop

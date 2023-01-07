@@ -25,9 +25,9 @@ void setup() {
 
 //Daily loop
 void loop() {
-Serial.print('Loop completions:');
+Serial.print("Loop completions:");
 Serial.println(n);
-Serial.print('time in ms');
+Serial.print("time in ms");
 Serial.println(millis());
 
 int LEDRed = 100;
