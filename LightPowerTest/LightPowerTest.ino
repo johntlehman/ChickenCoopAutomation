@@ -8,11 +8,10 @@
 //System started when it's dark - skips next light on cycle and resumes the following morning
 //System started when it's light - calculates light-on time at sunset (delay from sunset)
 
-#include <Wire.h> //Used for LED stick
 #include "Qwiic_LED_Stick.h" // Click here to get the library: http://librarymanager/All#SparkFun_Qwiic_LED_Stick
 
 LED LEDStick; //Create an object of the LED class
-
+int n = 0;
 
 void setup() {
   Serial.begin(115200); //run at 115200 for LED stick
@@ -22,29 +21,38 @@ void setup() {
   
   LEDStick.LEDOff();
   delay(2000);
-  
 }
 
 //Daily loop
 void loop() {
+Serial.print("Loop completions:");
+Serial.println(n);
+Serial.print("time in ms");
+Serial.println(millis());
 
 int LEDRed = 100;
 int LEDGreen = 0;
 int LEDBlue = 0;
 
-    //Turn on LED
-    for(int i = 0; i < 4; i++) {
-      digitalWrite(LED_BUILTIN, LOW);   // turn the board LED on (HIGH is the voltage level)
-      LEDGreen = LEDRed*0.83; //Ratio for Orange
-      LEDBlue = LEDRed*0.377;
-      LEDStick.setLEDColor(LEDRed, LEDGreen, LEDBlue); //Turn on LED stick
-      delay(10000);
-      LEDStick.LEDOff();
-      delay(2000);
+  //Turn on LED
+  for(int i = 0; i < 4; i++) {
+    digitalWrite(LED_BUILTIN, LOW);   // turn the board LED on (HIGH is the voltage level)
+    LEDRed = LEDRed + 50;
+    LEDGreen = LEDRed*0.83; //Ratio for Orange
+    LEDBlue = LEDRed*0.377;
+    LEDStick.setLEDColor(LEDRed, LEDGreen, LEDBlue); //Turn on LED stick
+    delay(10000);
+    LEDStick.LEDOff();
+    Wire.end();
+    Serial.end();
+    delay(2000);
+    Serial.begin(115200);
+    Wire.begin();
+    LEDStick.begin();
 
-      LEDRed = LEDRed + 50;
+    n++;
 
-      }
+  }
 
 }
   
