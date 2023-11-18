@@ -1,6 +1,7 @@
 {
     "board": "arduino:avr:uno",
-    "port": "/dev/tty.usbserial-110",
-    "programmer": "arduino:arduinoisp",
-    "sketch": "LightPowerTest/LightPowerTest.ino"
+    "port": "/dev/tty.usbserial-10",
+    "programmer": "arduinoisp",
+    "sketch": "Blink/Blink.ino",
+    "output": "../ArduinoOutput"
 }
