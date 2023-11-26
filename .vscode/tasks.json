@@ -4,9 +4,34 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "echo",
+            "label": "Compile_Arduino_Uno",
             "type": "shell",
-            "command": "echo Hello"
+            "command": "arduino-cli compile -v -b arduino:avr:uno LEDPWM",
+            "group": "build",
+            "isBackground": false,
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Flash_Arduino_Uno",
+            "type": "shell",
+            "command": "arduino-cli upload -p /dev/tty.usbserial-10 -v --fqbn arduino:avr:uno LEDPWM",
+            "group": "test",
+            "isBackground": false,
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true
+            },
+            "problemMatcher": []
         }
     ]
 }

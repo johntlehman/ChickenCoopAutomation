@@ -3,13 +3,13 @@
 
 #include <Wire.h> //Used for LED stick
 #include "Qwiic_LED_Stick.h" // Click here to get the library: http://librarymanager/All#SparkFun_Qwiic_LED_Stick
-#include <LowPower.h> //Load library for power saving
+#include "LowPower.h" //Load library for power saving
 
 //#include < avr/power.h>
 //#include < avr/sleep.h>
 
 LED LEDStick; //Create an object of the LED class
-
+ 
 //declare test variables
 int analogPin = A0; // Read solar panel voltage at analog pin A0
 int sensorValue = 0; // variable to store the value read
@@ -21,8 +21,8 @@ void setup() {
   Wire.begin(); //needed for LED stick
   LEDStick.begin(); //needed for LED stick
 
-  CLKPR = 0x80;
-  CLKPR = 0x02; //Set registers to lowest possible clock speed 62.6 kHz
+  //CLKPR = 0x80;
+  //CLKPR = 0x02; //Set registers to lowest possible clock speed 62.6 kHz
 
 }
 
@@ -44,8 +44,8 @@ void loop() {
     Serial.println("Going to sleeep zzzz");
     delay(500); //allow time to print
     // ATmega328P, ATmega168 - Sparkfun Redboard plus uses the ATMega328P
-    LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, 
-                  SPI_OFF, USART0_OFF, TWI_OFF);
+    LowPower.powerStandby(SLEEP_8S,ADC_ON,BOD_ON);
+    //LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, SPI_OFF, USART0_OFF, TWI_OFF);
     //LowPower.idle(); //fails
     //LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
     //LowPower.powerSave(SLEEP_8S, ADC_OFF, BOD_OFF, TIMER2_ON);
