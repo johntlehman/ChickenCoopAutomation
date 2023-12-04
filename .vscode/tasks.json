@@ -21,7 +21,7 @@
         {
             "label": "Flash_Arduino_Uno",
             "type": "shell",
-            "command": "arduino-cli upload -p /dev/tty.usbserial-10 -v --fqbn arduino:avr:uno LEDPWM",
+            "command": "arduino-cli upload -p /dev/tty.usbserial-110 -v --fqbn arduino:avr:uno LEDPWM",
             "group": "test",
             "isBackground": false,
             "presentation": {

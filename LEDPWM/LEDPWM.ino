@@ -21,16 +21,16 @@ void loop()
     digitalWrite(LED_BUILTIN,HIGH);
     analogWrite(11, 75); //Approx 25% duty cycle PWM
     Serial.println("25% Brightness");
-    delay(1000);
+    delay(3000);
     analogWrite(11, 125); //Approx 50% duty cycle PWM
     Serial.println("50% Brightness");
-    delay(1000);
+    delay(3000);
     analogWrite(11, 175); //Approx 75% duty cycle PWM
     Serial.println("75% Brightness");
-    delay(1000);
+    delay(3000);
     analogWrite(11, 255); //100% duty cycle PWM
     Serial.println("100% Brightness");
-    delay(1000);
+    delay(3000);
 
 }
 
