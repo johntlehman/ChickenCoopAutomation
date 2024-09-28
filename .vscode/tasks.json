@@ -6,7 +6,7 @@
         {
             "label": "Compile_Arduino_Uno",
             "type": "shell",
-            "command": "arduino-cli compile -v -b arduino:avr:uno CoopCode_v1",
+            "command": "arduino-cli compile -v -b arduino:avr:uno RTC",
             "group": "build",
             "isBackground": false,
             "presentation": {
@@ -21,7 +21,7 @@
         {
             "label": "Flash_Arduino_Uno",
             "type": "shell",
-            "command": "arduino-cli upload -p /dev/tty.usbserial-110 -v --fqbn arduino:avr:uno CoopCode_v1",
+            "command": "arduino-cli upload -p /dev/tty.usbserial-1110 -v --fqbn arduino:avr:uno RTC",
             "group": "test",
             "isBackground": false,
             "presentation": {

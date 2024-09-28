@@ -12,6 +12,22 @@ int month = 6;
 int year = 2018;
 int day = 5;
 
+byte currentMonth;
+byte currentDate;
+byte currentYear;
+byte currentHour;
+byte currentMinute;
+byte currentSecond;
+
+byte alarmMonth;
+byte alarmDate;
+byte alarmHour;
+byte alarmMinute;
+byte alarmSecond;
+
+String currentDateString;
+String currentTimeString;
+
 void setup() {
 
   Wire.begin();
@@ -35,17 +51,44 @@ void setup() {
     }*/
   
   rtc.set24Hour(); //set the RTC to use 24 hour time
-  
   Serial.println("RTC online!");
 }
 
 void loop() {
   if (rtc.updateTime() == false) //Updates the time variables from RTC
   {
-    Serial.print("RTC failed to update");
+    Serial.println("RTC failed to update");
   }
   
-  String currentDate = rtc.stringDateUSA();
-  String currentTime = rtc.stringTime();
-  Serial.println(currentDate + " " + currentTime);
+  currentDateString = rtc.stringDateUSA();
+  currentTimeString = rtc.stringTime();
+  Serial.println(currentDate + " " + currentTimeString);
+  
+  currentMonth = rtc.getMonth();
+  currentDate = rtc.getDate();
+  currentYear = rtc.getYear();
+  currentHour = rtc.getHours();
+  currentMinute = rtc.getMinutes();
+  currentSecond = rtc.getSeconds();
+
+  Serial.print("Month ");
+  Serial.println(currentMonth);
+  Serial.print("Day ");
+  Serial.println(currentDate);
+  Serial.print("Year ");
+  Serial.println(currentYear);
+  Serial.print("Hour ");
+  Serial.println(currentHour);
+  Serial.print("Minute ");
+  Serial.println(currentMinute);
+  Serial.print("Second ");
+  Serial.println(currentSecond);
+
+  alarmMonth = currentMonth;
+  alarmDate = currentDate;
+  alarmHour = currentHour;
+  alarmMinute = currentMinute;
+  alarmSecond = currentSecond + 15; //add 15 seconds
+
+  delay(5000);
 }
