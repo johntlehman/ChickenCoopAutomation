@@ -6,7 +6,7 @@
         {
             "label": "Compile_Arduino_Uno",
             "type": "shell",
-            "command": "arduino-cli compile -v -b arduino:avr:uno RTC",
+            "command": "arduino-cli compile -v -b arduino:avr:uno SystemPowerSaveTest",
             "group": "build",
             "isBackground": false,
             "presentation": {
@@ -21,7 +21,7 @@
         {
             "label": "Flash_Arduino_Uno",
             "type": "shell",
-            "command": "arduino-cli upload -p /dev/tty.usbserial-1110 -v --fqbn arduino:avr:uno RTC",
+            "command": "arduino-cli upload -p /dev/tty.usbserial-1110 -v --fqbn arduino:avr:uno SystemPowerSaveTest",
             "group": "test",
             "isBackground": false,
             "presentation": {
