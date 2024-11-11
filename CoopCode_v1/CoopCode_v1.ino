@@ -23,12 +23,6 @@ byte alarmHour;
 byte alarmMinute;
 byte alarmSecond;
 
-const byte interruptPin = 2;
-
-double voltage = 0; // Variable to keep track of LiPo voltage
-double soc = 0; // Variable to keep track of LiPo state-of-charge (SOC)
-bool alert; // Variable to keep track of whether alert has been triggered
-
 void setup() {  
   Wire.begin();
   Serial.begin(115200);
@@ -46,18 +40,15 @@ void setup() {
   }
   rtc.set24Hour(); //set the RTC to use 24 hour time
 
-  lipo.enableDebugging(); // Uncomment this line to enable helpful debug messages on Serial
-
-}
-
-void loop() {
   //Use the time from the Arduino compiler (build time) to set the RTC
   //Keep in mind that Arduino does not get the new compiler time every time it compiles. to ensure the proper time is loaded, open up a fresh version of the IDE and load the sketch.
   if (rtc.updateTime() == false) //Updates the time variables from RTC
   {
     Serial.print("RTC failed to update");
   }
+}
 
+void loop() {
   currentTimeString = rtc.stringTime();
   currentDateString = rtc.stringDateUSA();
   
@@ -71,23 +62,20 @@ void loop() {
   alarmDate = currentDate;
   alarmHour = currentHour;
   alarmMinute = currentMinute;
-  alarmSecond = currentSecond + 15; //add 15 seconds
-
-  if (alarmSecond >= 60)
-  {
-    alarmSecond = 59;
-  }
+  alarmSecond = currentSecond + 15;
 
   //Set the next day's alarm
   rtc.setAlarm(alarmSecond, alarmMinute, alarmHour, alarmDate, alarmMonth);
   rtc.setAlarmMode(6); //6 = Alarm goes off every minute
-  rtc.enableInterrupt(INTERRUPT_AIE); //Enable the Alarm Interrupt
 
   // Print the variables:
   printStatus();
 
-  //Alarm Interrupt - check that it's dark, check battery. If dark and battery >x%, turn lights on.
+  //check that it's dark, check battery. If dark and battery >x%, turn lights on.
   //Sunrise Detected - set alarm for next day and put the board to sleep
+
+  //Test Code
+  ReadLightSensor();
 
 }
 
@@ -107,6 +95,37 @@ void printStatus(){ //Prints status of all variables upon user request
   Serial.println(alarmBuffer);
 }
 
-void interruptPrint(){ //Interrupt print statement
-  Serial.println("Interrupt triggered bitches!");
+void ReadLightSensor(){
+    
+    const char analogPinLightSensor = A3; // Read solar panel voltage at analog pin A0
+    
+    unsigned long LoopStartTime = millis();
+    float lightSensorValue = 0;
+    float lightSensorCalc;
+    float lightSensorSum = 0;
+    float averageLightSensorVoltage = 0;
+    
+    for (int i = 1; i < 11; i++){
+      lightSensorValue = analogRead(analogPinLightSensor);  // read the input pin
+      lightSensorCalc = lightSensorValue * (3.3 / 1023.0);
+      lightSensorSum = lightSensorSum + lightSensorCalc;
+      averageLightSensorVoltage = lightSensorSum/i;
+      Serial.println(averageLightSensorVoltage);
+      delay(500);
+    }
+    
+    unsigned long LoopTime = millis()-LoopStartTime;
+
+    Serial.print("Average Light Sensor Voltage Last ");
+    Serial.print(LoopTime/1000);
+    Serial.print(" seconds: ");
+    Serial.println(averageLightSensorVoltage);
+
+}
+// Need to update battery voltage calc 
+void readBatteryVoltage(){
+    const char analogPinBattery = A3; //Read battery voltage at analog pin A3
+    
+    int batteryValue = 0; //variable to store battery voltage raw value
+    float batteryVoltageCalc;
 }
