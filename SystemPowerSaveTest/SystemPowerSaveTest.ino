@@ -25,6 +25,7 @@ void setup() {
 
   Serial.begin(115200); // Start serial, to output debug data
   Wire.begin();
+  // analogReference(DEFAULT); // Sets the analog reference pin (AREF) to 3.3v for use with RTC shield I2C comms - this doesn't seem to work, can't power the RTC from AREF
 
   // Set up the MAX17043 LiPo fuel gauge:
   if (lipo.begin() == false) // Connect to the MAX17043 using the default wire port

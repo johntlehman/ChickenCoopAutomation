@@ -11,7 +11,7 @@ unsigned long SunriseTime;
 unsigned long SunsetTime;
 //Code compares following two values and selects value which results in later WakeyTime
 const unsigned long DelayFromSunset = 360; //Minimum time without light used in fall/spring. default 10 hours (36,000,000 milliseconds)
-const unsigned long DelayFromSunrise = 790; //Maximum Light-On time. used in midwinter. default 22 hours (79,200,000 milliseconds)
+const unsigned long DelayFromSunrise = 790; //Maximum Light-On time. used in midwinter. default of 22 hours (79,200,000 milliseconds) results in lights on for 2 hours
 
 const float SunriseVoltage = 2.25; //This or higher voltage on panel determines sunrise
 const float SunsetVoltage = 1.5; //This or lower voltage on panel determines sunset
