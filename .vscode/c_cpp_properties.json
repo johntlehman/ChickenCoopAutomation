@@ -10,11 +10,14 @@
                 "${workspaceFolder}/**",
                 "/Users/johnlehman/Library/Arduino15/packages/arduino/hardware/avr/1.8.6/**",
                 "/Users/johnlehman/Library/Arduino15/packages/arduino/hardware/avr/1.8.6/cores/arduino/**",
+                "/Users/johnlehman/Library/Arduino15/packages/arduino/hardware/avr/1.8.6/libraries/**",
+                "/Users/johnlehman/Library/Arduino15/packages/arduino/hardware/avr/1.8.6/libraries/Wire/src/**",
                 "/Users/johnlehman/Documents/Arduino/libraries/**",
                 "/Users/johnlehman/Documents/Arduino/libraries/SparkFun_Qwiic_LED_Stick_Library/**",
                 "/Users/johnlehman/Documents/Arduino/libraries/Low_Power-1.81.0/**",
                 "//Users/johnlehman/Documents/Arduino/libraries/RunningAverage/**",
-                "/Users/johnlehman/Documents/Arduino/libraries/SparkFun_Qwiic_RTC_RV1805_Arduino_Library/**"
+                "/Users/johnlehman/Documents/Arduino/libraries/SparkFun_Qwiic_RTC_RV1805_Arduino_Library/src/**",
+                "/Users/johnlehman/Documents/Arduino/libraries/Time/**"
             ],
             "forcedInclude": [],
             "cStandard": "c17",

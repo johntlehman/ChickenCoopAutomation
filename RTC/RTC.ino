@@ -1,24 +1,26 @@
-#include <SparkFun_RV1805.h>
+#include <SparkFun_RV1805.h>;
 
 RV1805 rtc; //instantiate an object 'rtc' of the RV1805 class
 
 //The below variables control what the date will be set to
-int hund = 50;
-int sec = 2;
-int minute = 18;
-int hour = 7;
-int date = 25;
-int month = 6;
-int year = 2018;
-int day = 5;
+int testHund = 50;
+int testSec = 2;
+int testMinute = 18;
+int testHour = 7;
+int testDate = 25;
+int testMonth = 6;
+int testYear = 2018;
+int testDay = 5;
 
+unsigned long currentEpoch;
+int currentDate;
 byte currentMonth;
-byte currentDate;
 byte currentYear;
 byte currentHour;
 byte currentMinute;
 byte currentSecond;
 
+unsigned long alarmEpoch;
 byte alarmMonth;
 byte alarmDate;
 byte alarmHour;
@@ -59,21 +61,24 @@ void loop() {
   {
     Serial.println("RTC failed to update");
   }
-  
+
   currentDateString = rtc.stringDateUSA();
   currentTimeString = rtc.stringTime();
   Serial.println(currentDate + " " + currentTimeString);
   
-  currentMonth = rtc.getMonth();
+  currentEpoch = rtc.getEpoch();
   currentDate = rtc.getDate();
+  currentMonth = rtc.getMonth();
   currentYear = rtc.getYear();
   currentHour = rtc.getHours();
   currentMinute = rtc.getMinutes();
   currentSecond = rtc.getSeconds();
 
+  Serial.print("Epoch ");
+  Serial.println(currentEpoch);
   Serial.print("Month ");
   Serial.println(currentMonth);
-  Serial.print("Day ");
+  Serial.print("Date ");
   Serial.println(currentDate);
   Serial.print("Year ");
   Serial.println(currentYear);
@@ -84,11 +89,30 @@ void loop() {
   Serial.print("Second ");
   Serial.println(currentSecond);
 
+  alarmEpoch = currentEpoch + 15;
+  
+  Serial.print("Alarm Epoch ");
+  Serial.println(alarmEpoch);
+
   alarmMonth = currentMonth;
   alarmDate = currentDate;
   alarmHour = currentHour;
   alarmMinute = currentMinute;
   alarmSecond = currentSecond + 15; //add 15 seconds
+  
+  // Set the alarm with the values initialized above
+  rtc.setAlarm(alarmSecond, alarmMinute, alarmHour, alarmDate, alarmMonth);
 
-  delay(5000);
+  while (rtc.getEpoch() < alarmEpoch)
+  {
+    delay(50);
+    if (rtc.updateTime() == false) //Updates the time variables from RTC
+    {
+    Serial.println("RTC failed to update");
+    }
+  }
+
+  Serial.println("alarm bitches!");
 }
+  
+  

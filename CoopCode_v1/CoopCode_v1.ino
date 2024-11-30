@@ -1,12 +1,24 @@
 //Include statements
-#include <SparkFun_RV1805.h> //Library for RTC
+#include <SparkFun_RV1805.h>; //Library for RTC
+#include <Qwiic_LED_Stick.h>; //Library for LED stick
+#include <TimeLib.h>;
 
 RV1805 rtc; //instantiate an object 'rtc' of the RV1805 class
+LED LEDStick; //Create an object of the LED class
 
 //Declare variables
 unsigned long lightBeforeSunriseMinutes; //duration in minutes that lights will be on before sunrise
 unsigned long noAlarmBefore; //hhmm Lights will not turn on before this time
 int dayCounter = 0;
+
+//Use the time_t type to store timestamps in seconds. Allows use of TimeLib library functions
+time_t currentTime;
+time_t wakeyTime;
+time_t sunriseTime;
+time_t sunsetTime;
+//Code compares following two values and selects value which results in later WakeyTime
+const time_t delayFromSunset = 10*3600; //Minimum time without light used in fall/spring. default 10 hours (stored in seconds)
+const time_t delayFromSunrise = 22*3600; //Maximum Light-On time. used in midwinter. default of 22 hours (stored in seconds) results in lights on for 2 hours
 
 String currentDateString;
 String currentTimeString;
@@ -49,6 +61,7 @@ void setup() {
 }
 
 void loop() {
+  /*
   currentTimeString = rtc.stringTime();
   currentDateString = rtc.stringDateUSA();
   
@@ -57,32 +70,57 @@ void loop() {
   currentHour = rtc.getHours();
   currentMinute = rtc.getMinutes();
   currentSecond = rtc.getSeconds();
+  */
 
-  alarmMonth = currentMonth;
-  alarmDate = currentDate;
-  alarmHour = currentHour;
-  alarmMinute = currentMinute;
-  alarmSecond = currentSecond + 15;
+  //Store Wakeup Time
 
-  //Set the next day's alarm
-  rtc.setAlarm(alarmSecond, alarmMinute, alarmHour, alarmDate, alarmMonth);
-  rtc.setAlarmMode(6); //6 = Alarm goes off every minute
+  //Check light sensor reading
+
+  //If it's dark and this is not the first loop, turn the lights on
+
+  //Leave lights on while monitoring for sunrise and battery level
+
+  //Sunrise occurs - store sunrise time, next wakeup time, and turn off the lights
+
+  //Monitor for sunset
+
+  //Sunset occurs, store next wakeup time
+
+  //Wait for wakeup time
+
 
   // Print the variables:
-  printStatus();
+  PrintStatus();
 
+  //first 
+  
   //check that it's dark, check battery. If dark and battery >x%, turn lights on.
   //Sunrise Detected - set alarm for next day and put the board to sleep
 
   //Test Code
-  ReadLightSensor();
+  //ReadLightSensor();
 
 }
 
 // Function definitions
-void printStatus(){ //Prints status of all variables upon user request
-  Serial.println(currentDateString + " " + currentTimeString);
+void PrintStatus(){ //Prints status of all variables upon user request
+  if (rtc.updateTime() == false) //Updates the time variables from RTC
+  {
+    Serial.println("RTC failed to update");
+  }
+  
+  currentTime = rtc.getMonth();
+  delay(100);
+  Serial.println(currentTime + " is the Month");
+  delay(100);
+  //Serial.println(hour(currentTime) + " is the epoch hour");
+  //Serial.println(minute(currentTime) + " is the epoch minute");
+  wakeyTime = currentTime + 10*3600;
+  Serial.println(hour(wakeyTime) + " wakeyTime hours, this should be 10 hours later");   
+  //Serial.println(currentDateString + " " + currentTimeString); 
+  delay(10000);
 
+  /*
   //DEBUG -  Print alarm date and time (Note that there is no year alarm register)
   char alarmBuffer[20];
   sprintf(alarmBuffer, "2024-%02d-%02dT%02d:%02d:%02d",
@@ -91,8 +129,9 @@ void printStatus(){ //Prints status of all variables upon user request
           rtc.getAlarmHours(),
           rtc.getAlarmMinutes(),
           rtc.getAlarmSeconds());
-  Serial.println("Alarm is set for: ");
-  Serial.println(alarmBuffer);
+  //Serial.println("Alarm is set for: ");
+  //Serial.println(alarmBuffer);
+  */
 }
 
 void ReadLightSensor(){
