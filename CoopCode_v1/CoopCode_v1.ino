@@ -14,19 +14,19 @@ unsigned long sunriseEpoch;
 unsigned long sunsetEpoch;
 unsigned long wakeyEpoch;
 
-const char analogPinLightSensor = A0; // Read light sensor voltage at analog pin
-const char analogPinBattery = A3; //Read battery voltage at analog pin
+const char analogPinLightSensor = A3; // Read light sensor voltage at analog pin
+const char analogPinBattery = A0; //Read battery voltage at analog pin
 
 //Code compares following two values and selects value which results in later WakeyTime
 const unsigned long delayFromSunset = 10; //*3600; //Minimum time without light used in fall/spring. default 10 hours (stored in seconds)
 const unsigned long delayFromSunrise = 22; //*3600; //Maximum Light-On time. used in midwinter. default of 22 hours (stored in seconds) results in lights on for 2 hours
 
 float lightSensorVoltage; //used to track current light sensor voltage
-const float daylightVoltage = 3.3; //above this voltage is considered 'daylight'
-const float nightVoltage = 1.5; //below this voltage is considered 'night'
+const float daylightVoltage = 1.25; //above this voltage is considered 'daylight'
+const float nightVoltage = 0.25; //below this voltage is considered 'night'
 
 float batteryVoltage; //used to track current battery voltage
-const float minBatteryVoltage = 11.8; //minimum battery voltage to enable lights
+const float minBatteryVoltage = 2.75; //minimum battery voltage to enable lights. With 3.3k/10k voltage divider, 2.85V is ~11V at the battery
 
 //Variables for LED RGB values
 int LEDRed; 
@@ -88,10 +88,8 @@ void loop()
   PrintStatus(); //Print status of all variables
   Serial.println("Wakey wakey sleepy chickens! It's day " + String(dayCounter));
 
-  lightSensorVoltage = 1.0; //remove after debug
-  batteryVoltage = 12.0; //remove after debug
   //If it's dark and this is not the first loop, turn the lights on
-  if (dayCounter >= 0 & lightSensorVoltage < daylightVoltage & batteryVoltage > minBatteryVoltage)
+  if (dayCounter >= 0 & lightSensorVoltage <= daylightVoltage & batteryVoltage > minBatteryVoltage)
   {
     LEDRed = 0;
     
@@ -114,29 +112,25 @@ void loop()
   {
     LEDStick.LEDOff(); //make sure LED stick is off if conditions aren't met.
   }
-
-  dayCounter++; //increment day counter
   
   //Monitor for sunrise and battery level
-  while (lightSensorVoltage < daylightVoltage & batteryVoltage > minBatteryVoltage) //& time is less than sunrise time?
+  while (lightSensorVoltage <= daylightVoltage & batteryVoltage > minBatteryVoltage) //& time is less than sunrise time?
   {
     //update light sensor voltage and battery voltage
     lightSensorVoltage = GetLightSensorVoltage();
     batteryVoltage = GetBatteryVoltage();
     Serial.println("Waiting for sunrise");
     PrintStatus(); //print for debugging
-
-    delay(3000); //remove after debug
-    lightSensorVoltage = 3.3; //remove after debug
   }
 
   //Sunrise occurs - store sunrise time and turn off the lights
   Serial.println("Sunrise!!");
   LEDStick.LEDOff();
+  delay(100); //delay to allow for lights to turn off
   sunriseEpoch = GetCurrentEpoch();
   
   //Monitor for sunset
-  while (lightSensorVoltage > nightVoltage) //& time is less than sunset time?
+  while (lightSensorVoltage >= nightVoltage) //& time is less than sunset time?
   {
     CatNap();
 
@@ -144,11 +138,11 @@ void loop()
     lightSensorVoltage = GetLightSensorVoltage();
 
     Serial.println("Waiting for sunset. Current light sensor voltage: " + String(lightSensorVoltage,2)); //remove after debug
-
-    lightSensorVoltage = 1.0; //remove after debug
   }
   
   //Sunset occurs, store next wakeup time
+  Serial.println("Sunset!!");
+  
   sunsetEpoch = GetCurrentEpoch();
   unsigned long sunriseWakey = sunriseEpoch + delayFromSunrise;
   unsigned long sunsetWakey = sunsetEpoch + delayFromSunset;
@@ -173,7 +167,11 @@ void loop()
     
     CatNap();
   }
+
+  dayCounter++; //increment day counter
+
 }
+
 
 // Function definitions----------------------------------------------
 void PrintStatus()
@@ -189,7 +187,7 @@ void PrintStatus()
 
 void CatNap()
 {
-  delay(200); //brief delay to finish printing or any other tasks
+  delay(500); //brief delay to finish printing or any other tasks
 
   //Testing a lowpower state ATmega328P, ATmega168. May need to leave some things on for functionality
   LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, SPI_OFF, USART0_OFF, TWI_OFF); //sleep 8 seconds
