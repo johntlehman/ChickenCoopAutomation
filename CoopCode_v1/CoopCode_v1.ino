@@ -18,7 +18,7 @@ const char analogPinLightSensor = A3; // Read light sensor voltage at analog pin
 const char analogPinBattery = A0; //Read battery voltage at analog pin
 
 //Code compares following two values and selects value which results in later WakeyTime
-const unsigned long delayFromSunset = 10; //*3600; //Minimum time without light used in fall/spring. default 10 hours (stored in seconds)
+const unsigned long delayFromSunset = 8*3600; //Minimum time without light used in fall/spring. default 10 hours (stored in seconds)
 const unsigned long delayFromSunrise = 22; //*3600; //Maximum Light-On time. used in midwinter. default of 22 hours (stored in seconds) results in lights on for 2 hours
 
 float lightSensorVoltage; //used to track current light sensor voltage
@@ -26,15 +26,16 @@ const float daylightVoltage = 1.25; //above this voltage is considered 'daylight
 const float nightVoltage = 0.25; //below this voltage is considered 'night'
 
 float batteryVoltage; //used to track current battery voltage
-const float minBatteryVoltage = 2.75; //minimum battery voltage to enable lights. With 3.3k/10k voltage divider, 2.85V is ~11V at the battery
+const float minBatteryVoltage = 1.82; //minimum battery voltage to enable lights. With 3.3k/10k voltage divider, 2.85V is ~11V at the battery --Experimentally this is 1.82 for 11v. Approx. (3.3/5)*12 = 1.88V
 
 //Variables for LED RGB values
-int LEDRed; 
+int LEDRed;
 int LEDGreen;
 int LEDBlue;
-const int LEDRatioGreen_Red = 0.83; //Ratio of Green to Red
-const int LEDRatioBlue_Red = 0.377; //Ratio of Blue to Red
-const int LEDBrightnessSetpoint = 200; //Brightness Level for LEDs, 255 is HW limit
+const int LEDRatioGreen_Red = 0.83; //Ratio of Green to Red (orange 0.83)
+const int LEDRatioBlue_Red = 0.377; //Ratio of Blue to Red (orange 0.377)
+const int LEDBrightnessSetpoint = 254; //Brightness Level for LEDs, 255 is HW limit
+const int LEDBrightnessIncrement = 20; //Increment for LED brightness
 
 
 void setup() 
@@ -94,10 +95,10 @@ void loop()
     LEDRed = 0;
     
     //turn on lights
-    while(LEDRed < LEDBrightnessSetpoint)
+    while(LEDRed <= LEDBrightnessSetpoint - LEDBrightnessIncrement)
     {
       //digitalWrite(LED_BUILTIN, HIGH);   // turn the board LED on (HIGH is the voltage level)
-      LEDRed = LEDRed + 20;
+      LEDRed = LEDRed + LEDBrightnessIncrement;
       LEDGreen = LEDRed*LEDRatioGreen_Red;
       LEDBlue = LEDRed*LEDRatioBlue_Red;
       LEDStick.setLEDColor(LEDRed, LEDGreen, LEDBlue); //Set LED stick values
@@ -113,14 +114,22 @@ void loop()
     LEDStick.LEDOff(); //make sure LED stick is off if conditions aren't met.
   }
   
-  //Monitor for sunrise and battery level
-  while (lightSensorVoltage <= daylightVoltage & batteryVoltage > minBatteryVoltage) //& time is less than sunrise time?
+  //Monitor for sunrise
+  while (lightSensorVoltage <= daylightVoltage) //& time is less than sunrise time?
   {
-    //update light sensor voltage and battery voltage
+    //update light sensor voltage
     lightSensorVoltage = GetLightSensorVoltage();
-    batteryVoltage = GetBatteryVoltage();
     Serial.println("Waiting for sunrise");
     PrintStatus(); //print for debugging
+    
+    //update battery voltage
+    batteryVoltage = GetBatteryVoltage();
+    if (batteryVoltage < minBatteryVoltage) //if battery voltage drops below minimum, turn off lights
+    {
+      LEDStick.LEDOff();
+      Serial.println("Battery voltage too low, turning off lights");
+    }
+    
   }
 
   //Sunrise occurs - store sunrise time and turn off the lights
@@ -183,11 +192,12 @@ void PrintStatus()
   Serial.println("Current Light Sensor Voltage: " + String(statusLightSensorVoltage,2));
   Serial.println("Current Battery Voltage: " + String(statusBatteryVoltage,2));
   Serial.println("Current Epoch: " + String(statusEpoch));
+  Serial.println("Day Counter: " + String(dayCounter));
 }
 
 void CatNap()
 {
-  delay(500); //brief delay to finish printing or any other tasks
+  delay(200); //brief delay to finish printing or any other tasks
 
   //Testing a lowpower state ATmega328P, ATmega168. May need to leave some things on for functionality
   LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, SPI_OFF, USART0_OFF, TWI_OFF); //sleep 8 seconds
@@ -214,9 +224,19 @@ float GetLightSensorVoltage()
 float GetBatteryVoltage()
 {  
   int batteryValue = 0; //variable to store battery voltage raw value
-  float batteryVoltageCalc = 12.0; //update with actual calc
+  float batteryVoltageCalc = 0;
+  float batterySum = 0;
+  float averageBatteryVoltage = 0;
 
-  return batteryVoltageCalc;
+  for (int i = 1; i < 5; i++){
+    batteryValue = analogRead(analogPinBattery);  // read the input pin
+    batteryVoltageCalc = batteryValue * (3.3 / 1023.0);
+    batterySum = batterySum + batteryVoltageCalc;
+    averageBatteryVoltage = batterySum/i;
+    delay(500);
+  }
+  
+  return averageBatteryVoltage;
 }
 
 unsigned long GetCurrentEpoch()
