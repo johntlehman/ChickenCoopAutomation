@@ -3,7 +3,7 @@
 ### Overview
 Intention of automated chicken coop is to provide an off-grid lighting solution for a chicken house. Lights should go on shortly before dawn and turn off when it's sufficiently light outside.
 
-Requirements:
+Features:
 * Code turns on lights in a chicken coop when natural daylight <14 hours
 * 
 * Off grid capable (no external power)

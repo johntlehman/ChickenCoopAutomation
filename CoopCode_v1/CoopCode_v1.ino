@@ -18,8 +18,8 @@ const char analogPinLightSensor = A3; // Read light sensor voltage at analog pin
 const char analogPinBattery = A0; //Read battery voltage at analog pin
 
 //Code compares following two values and selects value which results in later WakeyTime
-const unsigned long delayFromSunset = 8*3600; //Minimum time without light used in fall/spring. default 10 hours (stored in seconds)
-const unsigned long delayFromSunrise = 22; //*3600; //Maximum Light-On time. used in midwinter. default of 22 hours (stored in seconds) results in lights on for 2 hours
+const unsigned long delayFromSunset = 10*3600; //Minimum time without light used in fall/spring. default 10 hours (stored in seconds)
+const unsigned long delayFromSunrise = 22*3600; //Maximum Light-On time. used in midwinter. default of 22 hours (stored in seconds) results in lights on for 2 hours
 
 float lightSensorVoltage; //used to track current light sensor voltage
 const float daylightVoltage = 1.25; //above this voltage is considered 'daylight'
@@ -36,7 +36,6 @@ const int LEDRatioGreen_Red = 0.83; //Ratio of Green to Red (orange 0.83)
 const int LEDRatioBlue_Red = 0.377; //Ratio of Blue to Red (orange 0.377)
 const int LEDBrightnessSetpoint = 254; //Brightness Level for LEDs, 255 is HW limit
 const int LEDBrightnessIncrement = 20; //Increment for LED brightness
-
 
 void setup() 
 {  
@@ -90,7 +89,7 @@ void loop()
   Serial.println("Wakey wakey sleepy chickens! It's day " + String(dayCounter));
 
   //If it's dark and this is not the first loop, turn the lights on
-  if (dayCounter >= 0 & lightSensorVoltage <= daylightVoltage & batteryVoltage > minBatteryVoltage)
+  if (dayCounter > 0 & lightSensorVoltage <= daylightVoltage & batteryVoltage > minBatteryVoltage)
   {
     LEDRed = 0;
     
@@ -129,11 +128,11 @@ void loop()
       LEDStick.LEDOff();
       Serial.println("Battery voltage too low, turning off lights");
     }
-    
   }
 
   //Sunrise occurs - store sunrise time and turn off the lights
   Serial.println("Sunrise!!");
+  PrintStatus();
   LEDStick.LEDOff();
   delay(100); //delay to allow for lights to turn off
   sunriseEpoch = GetCurrentEpoch();
@@ -145,12 +144,14 @@ void loop()
 
     //check light sensor voltage
     lightSensorVoltage = GetLightSensorVoltage();
+    PrintStatus();
 
     Serial.println("Waiting for sunset. Current light sensor voltage: " + String(lightSensorVoltage,2)); //remove after debug
   }
   
   //Sunset occurs, store next wakeup time
   Serial.println("Sunset!!");
+  PrintStatus();
   
   sunsetEpoch = GetCurrentEpoch();
   unsigned long sunriseWakey = sunriseEpoch + delayFromSunrise;
@@ -188,11 +189,16 @@ void PrintStatus()
   float statusLightSensorVoltage = GetLightSensorVoltage();
   float statusBatteryVoltage = GetBatteryVoltage();
   unsigned long statusEpoch = GetCurrentEpoch();
+  String statusTimestamp = GetCurrentTimestamp();
 
+  Serial.println("----------Start Status----------");
+  Serial.println("Current Day: " + String(dayCounter));
+  Serial.println("Current Timestamp :" + statusTimestamp);
   Serial.println("Current Light Sensor Voltage: " + String(statusLightSensorVoltage,2));
   Serial.println("Current Battery Voltage: " + String(statusBatteryVoltage,2));
   Serial.println("Current Epoch: " + String(statusEpoch));
   Serial.println("Day Counter: " + String(dayCounter));
+  Serial.println("----------End Status-----------");
 }
 
 void CatNap()
@@ -249,3 +255,14 @@ unsigned long GetCurrentEpoch()
   currentEpoch = RTC.getEpoch();
   return currentEpoch;
 }
+
+String GetCurrentTimestamp()
+{
+  if (RTC.updateTime() == false) //Updates the time variables from RTC
+  {
+  Serial.println("RTC failed to update");
+  }
+  //char currentTimestamp[20]; //allocate 20 bytes to store current timestamp
+  return RTC.stringTimeStamp(); //Get the current timestamp from RTC
+}
+
