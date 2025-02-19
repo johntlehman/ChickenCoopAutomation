@@ -18,8 +18,8 @@ const char analogPinLightSensor = A3; // Read light sensor voltage at analog pin
 const char analogPinBattery = A0; //Read battery voltage at analog pin
 
 //Code compares following two values and selects value which results in later WakeyTime
-const unsigned long delayFromSunset = 10*3600; //Minimum time without light used in fall/spring. default 10 hours (stored in seconds)
-const unsigned long delayFromSunrise = 22*3600; //Maximum Light-On time. used in midwinter. default of 22 hours (stored in seconds) results in lights on for 2 hours
+const unsigned long delayFromSunset = 10UL*3600UL; //Minimum time without light used in fall/spring. default 10 hours (stored in seconds) NOTE: UL suffix necessary to prevent overflow in arduino
+const unsigned long delayFromSunrise = 22UL*3600UL; //Maximum Light-On time. used in midwinter. default of 22 hours (stored in seconds) results in lights on for 2 hours NOTE: UL suffix necessary to prevent overflow in arduino
 
 float lightSensorVoltage; //used to track current light sensor voltage
 const float daylightVoltage = 1.25; //above this voltage is considered 'daylight'
@@ -136,6 +136,7 @@ void loop()
   LEDStick.LEDOff();
   delay(100); //delay to allow for lights to turn off
   sunriseEpoch = GetCurrentEpoch();
+  Serial.println("Sunrise Epoch: " + String(sunriseEpoch));
   
   //Monitor for sunset
   while (lightSensorVoltage >= nightVoltage) //& time is less than sunset time?
@@ -156,6 +157,12 @@ void loop()
   sunsetEpoch = GetCurrentEpoch();
   unsigned long sunriseWakey = sunriseEpoch + delayFromSunrise;
   unsigned long sunsetWakey = sunsetEpoch + delayFromSunset;
+  Serial.println("sunriseEpoch: " + String(sunriseEpoch));
+  Serial.println("sunsetEpoch: " + String(sunsetEpoch));
+  Serial.println("Delay from Sunrise: " + String(delayFromSunrise));
+  Serial.println("Delay from Sunset: " + String(delayFromSunset));
+  Serial.println("sunriseWakey: " + String(sunriseWakey));
+  Serial.println("sunsetWakey: " + String(sunsetWakey));
 
   if (sunriseWakey > sunsetWakey)
   {
@@ -191,14 +198,13 @@ void PrintStatus()
   unsigned long statusEpoch = GetCurrentEpoch();
   String statusTimestamp = GetCurrentTimestamp();
 
-  Serial.println("----------Start Status----------");
-  Serial.println("Current Day: " + String(dayCounter));
-  Serial.println("Current Timestamp :" + statusTimestamp);
-  Serial.println("Current Light Sensor Voltage: " + String(statusLightSensorVoltage,2));
-  Serial.println("Current Battery Voltage: " + String(statusBatteryVoltage,2));
-  Serial.println("Current Epoch: " + String(statusEpoch));
+  Serial.println("---------------Status------------");
   Serial.println("Day Counter: " + String(dayCounter));
-  Serial.println("----------End Status-----------");
+  Serial.println("Timestamp :" + statusTimestamp);
+  Serial.println("Epoch: " + String(statusEpoch));
+  Serial.println("Light Sensor Voltage: " + String(statusLightSensorVoltage,2));
+  Serial.println("Battery Voltage: " + String(statusBatteryVoltage,2));
+  Serial.println("---------------------------------");
 }
 
 void CatNap()
@@ -252,7 +258,7 @@ unsigned long GetCurrentEpoch()
   Serial.println("RTC failed to update");
   }
   
-  currentEpoch = RTC.getEpoch();
+  unsigned long currentEpoch = RTC.getEpoch();
   return currentEpoch;
 }
 
