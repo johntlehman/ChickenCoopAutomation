@@ -1,158 +1,274 @@
-//Include statements
-#include <SparkFun_RV1805.h> //Library for RTC
-#include "SparkFun_MAX1704x_Fuel_Gauge_Arduino_Library.h"
+//Include necessary libraries
+#include <SparkFun_RV1805.h>; //Library for RTC
+#include <Qwiic_LED_Stick.h>; //Library for LED stick
+#include <LowPower.h> //Library for power saving
 
-RV1805 rtc; //instantiate an object 'rtc' of the RV1805 class
-SFE_MAX1704X lipo(MAX1704X_MAX17043);  //Create an object called 'lipo' of the SFE_MAX1704X class
+RV1805 RTC; //instantiate an object 'rtc' of the RV1805 class
+LED LEDStick; //Create an object of the LED class
 
 //Declare variables
-unsigned long lightBeforeSunriseMinutes; //duration in minutes that lights will be on before sunrise
-unsigned long noAlarmBefore; //hhmm Lights will not turn on before this time
 int dayCounter = 0;
 
-String currentDateString;
-String currentTimeString;
+unsigned long currentEpoch;
+unsigned long sunriseEpoch;
+unsigned long sunsetEpoch;
+unsigned long wakeyEpoch;
 
-byte currentMonth;
-byte currentDate;
-byte currentHour;
-byte currentMinute;
-byte currentSecond;
+const char analogPinLightSensor = A3; // Read light sensor voltage at analog pin
+const char analogPinBattery = A0; //Read battery voltage at analog pin
 
-byte alarmMonth;
-byte alarmDate;
-byte alarmHour;
-byte alarmMinute;
-byte alarmSecond;
+//Code compares following two values and selects value which results in later WakeyTime
+const unsigned long delayFromSunset = 10UL*3600UL; //Minimum time without light used in fall/spring. default 10 hours (stored in seconds) NOTE: UL suffix necessary to prevent overflow in arduino
+const unsigned long delayFromSunrise = 22UL*3600UL; //Maximum Light-On time. used in midwinter. default of 22 hours (stored in seconds) results in lights on for 2 hours NOTE: UL suffix necessary to prevent overflow in arduino
 
-const byte interruptPin = 2;
+float lightSensorVoltage; //used to track current light sensor voltage
+const float daylightVoltage = 1.25; //above this voltage is considered 'daylight'
+const float nightVoltage = 0.25; //below this voltage is considered 'night'
 
-double voltage = 0; // Variable to keep track of LiPo voltage
-double soc = 0; // Variable to keep track of LiPo state-of-charge (SOC)
-bool alert; // Variable to keep track of whether alert has been triggered
+float batteryVoltage; //used to track current battery voltage
+const float minBatteryVoltage = 1.82; //minimum battery voltage to enable lights. With 3.3k/10k voltage divider, 2.85V is ~11V at the battery --Experimentally this is 1.82 for 11v. Approx. (3.3/5)*12 = 1.88V
 
-void setup() {  
-  pinMode(interruptPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), interruptPrint, LOW); //enable an interrupt pin to print a statement when grounded
+//Variables for LED RGB values
+int LEDRed;
+int LEDGreen;
+int LEDBlue;
+const int LEDRatioGreen_Red = 0.83; //Ratio of Green to Red (orange 0.83)
+const int LEDRatioBlue_Red = 0.377; //Ratio of Blue to Red (orange 0.377)
+const int LEDBrightnessSetpoint = 254; //Brightness Level for LEDs, 255 is HW limit
+const int LEDBrightnessIncrement = 20; //Increment for LED brightness
+
+void setup() 
+{  
   Wire.begin();
   Serial.begin(115200);
   Serial.println("Serial Comms Online");
 
-  if (rtc.begin() == false) {
-    Serial.println("Something went wrong with RTC, check wiring");
+  if (LEDStick.begin() == false)
+  {
+    Serial.println("Something went wrong with LEDStick");
+  }
+
+  else 
+  { 
+    Serial.println("LEDStick online!");
+  }
+
+  if (RTC.begin() == false) 
+  {
+    Serial.println("Something went wrong with RTC");
   }  
-  else { 
-      Serial.println("RTC online!");
-    }
   
-  if (rtc.setToCompilerTime() == false) {
+  else 
+  { 
+    Serial.println("RTC online!");
+  }
+  
+  if (RTC.setToCompilerTime() == false) 
+  {
     Serial.println("Something went wrong setting the time");
   }
-  rtc.set24Hour(); //set the RTC to use 24 hour time
+  
+  RTC.set24Hour(); //set the RTC to use 24 hour time
 
-  lipo.enableDebugging(); // Uncomment this line to enable helpful debug messages on Serial
-
-  // Set up the MAX17043 LiPo fuel gauge:
-  if (lipo.begin() == false) // Connect to the MAX17043 using the default wire port
-  {
-    Serial.println(F("MAX17043 not detected. Please check wiring. Freezing."));
-    while (1)
-      ;
-  }
-
-	// Quick start restarts the MAX17043 in hopes of getting a more accurate
-	// guess for the SOC.
-	lipo.quickStart();
-
-	// We can set an interrupt to alert when the battery SoC gets too low.
-	// We can alert at anywhere between 1% - 32%:
-	lipo.setThreshold(20); // Set alert threshold to 20%.
-
-}
-
-void loop() {
   //Use the time from the Arduino compiler (build time) to set the RTC
   //Keep in mind that Arduino does not get the new compiler time every time it compiles. to ensure the proper time is loaded, open up a fresh version of the IDE and load the sketch.
-  if (rtc.updateTime() == false) //Updates the time variables from RTC
+  if (RTC.updateTime() == false) //Updates the time variables from RTC
   {
-    Serial.print("RTC failed to update");
+    Serial.println("RTC failed to update");
+  }
+}
+
+void loop() 
+{  
+  //Sunrise time, alarm goes off
+  wakeyEpoch = GetCurrentEpoch(); //call function to update RTC with current Epoch and store it as wakeytime
+  batteryVoltage = GetBatteryVoltage(); //Get battery voltage
+  lightSensorVoltage = GetLightSensorVoltage(); //Get light sensor voltage
+
+  PrintStatus(); //Print status of all variables
+  Serial.println("Wakey wakey sleepy chickens! It's day " + String(dayCounter));
+
+  //If it's dark and this is not the first loop, turn the lights on
+  if (dayCounter > 0 & lightSensorVoltage <= daylightVoltage & batteryVoltage > minBatteryVoltage)
+  {
+    LEDRed = 0;
+    
+    //turn on lights
+    while(LEDRed <= LEDBrightnessSetpoint - LEDBrightnessIncrement)
+    {
+      //digitalWrite(LED_BUILTIN, HIGH);   // turn the board LED on (HIGH is the voltage level)
+      LEDRed = LEDRed + LEDBrightnessIncrement;
+      LEDGreen = LEDRed*LEDRatioGreen_Red;
+      LEDBlue = LEDRed*LEDRatioBlue_Red;
+      LEDStick.setLEDColor(LEDRed, LEDGreen, LEDBlue); //Set LED stick values
+      Serial.println("LEDRed: " + String(LEDRed));
+      delay(250);
+    }
+
+    Serial.println("Lights on!");
   }
 
-  currentTimeString = rtc.stringTime();
-  currentDateString = rtc.stringDateUSA();
+  else
+  {
+    LEDStick.LEDOff(); //make sure LED stick is off if conditions aren't met.
+  }
   
-  currentMonth = rtc.getMonth();
-  currentDate = rtc.getDate();
-  currentHour = rtc.getHours();
-  currentMinute = rtc.getMinutes();
-  currentSecond = rtc.getSeconds();
-
-  alarmMonth = currentMonth;
-  alarmDate = currentDate;
-  alarmHour = currentHour;
-  alarmMinute = currentMinute;
-  alarmSecond = currentSecond + 15; //add 15 seconds
-
-  if (alarmSecond >= 60)
+  //Monitor for sunrise
+  while (lightSensorVoltage <= daylightVoltage) //& time is less than sunrise time?
   {
-    alarmSecond = 59;
+    //update light sensor voltage
+    lightSensorVoltage = GetLightSensorVoltage();
+    Serial.println("Waiting for sunrise");
+    PrintStatus(); //print for debugging
+    
+    //update battery voltage
+    batteryVoltage = GetBatteryVoltage();
+    if (batteryVoltage < minBatteryVoltage) //if battery voltage drops below minimum, turn off lights
+    {
+      LEDStick.LEDOff();
+      Serial.println("Battery voltage too low, turning off lights");
+    }
   }
 
-  //Set the next day's alarm
-  rtc.setAlarm(alarmSecond, alarmMinute, alarmHour, alarmDate, alarmMonth);
-  rtc.setAlarmMode(6); //6 = Alarm goes off every minute
-  rtc.enableInterrupt(INTERRUPT_AIE); //Enable the Alarm Interrupt
+  //Sunrise occurs - store sunrise time and turn off the lights
+  Serial.println("Sunrise!!");
+  PrintStatus();
+  LEDStick.LEDOff();
+  delay(100); //delay to allow for lights to turn off
+  sunriseEpoch = GetCurrentEpoch();
+  Serial.println("Sunrise Epoch: " + String(sunriseEpoch));
+  
+  //Monitor for sunset
+  while (lightSensorVoltage >= nightVoltage) //& time is less than sunset time?
+  {
+    CatNap();
 
-  // lipo.getVoltage() returns a voltage value (e.g. 3.93)
-  voltage = lipo.getVoltage();
-  // lipo.getSOC() returns the estimated state of charge (e.g. 79%)
-  soc = lipo.getSOC();
-  // lipo.getAlert() returns a 0 or 1 (0=alert not triggered)
-  alert = lipo.getAlert();
+    //check light sensor voltage
+    lightSensorVoltage = GetLightSensorVoltage();
+    PrintStatus();
 
-  // Print the variables:
-  printStatus();
+    Serial.println("Waiting for sunset. Current light sensor voltage: " + String(lightSensorVoltage,2)); //remove after debug
+  }
+  
+  //Sunset occurs, store next wakeup time
+  Serial.println("Sunset!!");
+  PrintStatus();
+  
+  sunsetEpoch = GetCurrentEpoch();
+  unsigned long sunriseWakey = sunriseEpoch + delayFromSunrise;
+  unsigned long sunsetWakey = sunsetEpoch + delayFromSunset;
+  Serial.println("sunriseEpoch: " + String(sunriseEpoch));
+  Serial.println("sunsetEpoch: " + String(sunsetEpoch));
+  Serial.println("Delay from Sunrise: " + String(delayFromSunrise));
+  Serial.println("Delay from Sunset: " + String(delayFromSunset));
+  Serial.println("sunriseWakey: " + String(sunriseWakey));
+  Serial.println("sunsetWakey: " + String(sunsetWakey));
 
-  Serial.print("Voltage: ");
-  Serial.print(voltage);  // Print the battery voltage
-  Serial.println(" V");
+  if (sunriseWakey > sunsetWakey)
+  {
+    wakeyEpoch = sunriseWakey;
+    Serial.println("sunriseWakey > sunsetWakey, Next wakeup time: " + String(wakeyEpoch));
+  }
 
-  Serial.print("Percentage: ");
-  Serial.print(soc); // Print the battery state of charge
-  Serial.println(" %");
+  else
+  {
+    wakeyEpoch = sunsetWakey;
+    Serial.println("sunsetWakey > sunriseWakey, Next wakeup time: " + String(wakeyEpoch));
+  }
 
-  Serial.print("Alert: ");
-  Serial.println(alert);
-  Serial.println();
+  //Wait for wakeup time
+  while (currentEpoch < wakeyEpoch)
+  {
+    currentEpoch = GetCurrentEpoch();
+    Serial.println("Waiting for next wakeup time. Current Epoch: " + String(currentEpoch) + " Wakey Epoch: " + String(wakeyEpoch)); 
+    
+    CatNap();
+  }
 
-  //Put Board to sleep and wait for alarm interrupt
-
-  //Junk Code
-  delay(60000);
-  Serial.println("I just waited 60 more seconds");
-  printStatus();
-
-  //Alarm Interrupt - check that it's dark, check battery. If dark and battery >x%, turn lights on.
-  //Sunrise Detected - set alarm for next day and put the board to sleep
+  dayCounter++; //increment day counter
 
 }
 
-// Function definitions
-void printStatus(){ //Prints status of all variables upon user request
-  Serial.println(currentDateString + " " + currentTimeString);
 
-  //DEBUG -  Print alarm date and time (Note that there is no year alarm register)
-  char alarmBuffer[20];
-  sprintf(alarmBuffer, "2024-%02d-%02dT%02d:%02d:%02d",
-          rtc.getAlarmMonth(),
-          rtc.getAlarmDate(),
-          rtc.getAlarmHours(),
-          rtc.getAlarmMinutes(),
-          rtc.getAlarmSeconds());
-  Serial.println("Alarm is set for: ");
-  Serial.println(alarmBuffer);
+// Function definitions----------------------------------------------
+void PrintStatus()
+{ //Prints status of all variables upon user request
+  float statusLightSensorVoltage = GetLightSensorVoltage();
+  float statusBatteryVoltage = GetBatteryVoltage();
+  unsigned long statusEpoch = GetCurrentEpoch();
+  String statusTimestamp = GetCurrentTimestamp();
+
+  Serial.println("---------------Status------------");
+  Serial.println("Day Counter: " + String(dayCounter));
+  Serial.println("Timestamp :" + statusTimestamp);
+  Serial.println("Epoch: " + String(statusEpoch));
+  Serial.println("Light Sensor Voltage: " + String(statusLightSensorVoltage,2));
+  Serial.println("Battery Voltage: " + String(statusBatteryVoltage,2));
+  Serial.println("---------------------------------");
 }
 
-void interruptPrint(){ //Interrupt print statement
-  Serial.println("Interrupt triggered bitches!");
+void CatNap()
+{
+  delay(200); //brief delay to finish printing or any other tasks
+
+  //Testing a lowpower state ATmega328P, ATmega168. May need to leave some things on for functionality
+  LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, SPI_OFF, USART0_OFF, TWI_OFF); //sleep 8 seconds
 }
+
+float GetLightSensorVoltage()
+{
+  float lightSensorValue = 0;
+  float lightSensorCalc;
+  float lightSensorSum = 0;
+  float averageLightSensorVoltage = 0;
+    
+  for (int i = 1; i < 5; i++){
+    lightSensorValue = analogRead(analogPinLightSensor);  // read the input pin
+    lightSensorCalc = lightSensorValue * (3.3 / 1023.0);
+    lightSensorSum = lightSensorSum + lightSensorCalc;
+    averageLightSensorVoltage = lightSensorSum/i;
+    delay(500);
+  }
+
+  return averageLightSensorVoltage;
+}
+// Need to update battery voltage calc 
+float GetBatteryVoltage()
+{  
+  int batteryValue = 0; //variable to store battery voltage raw value
+  float batteryVoltageCalc = 0;
+  float batterySum = 0;
+  float averageBatteryVoltage = 0;
+
+  for (int i = 1; i < 5; i++){
+    batteryValue = analogRead(analogPinBattery);  // read the input pin
+    batteryVoltageCalc = batteryValue * (3.3 / 1023.0);
+    batterySum = batterySum + batteryVoltageCalc;
+    averageBatteryVoltage = batterySum/i;
+    delay(500);
+  }
+  
+  return averageBatteryVoltage;
+}
+
+unsigned long GetCurrentEpoch()
+{
+  if (RTC.updateTime() == false) //Updates the time variables from RTC
+  {
+  Serial.println("RTC failed to update");
+  }
+  
+  unsigned long currentEpoch = RTC.getEpoch();
+  return currentEpoch;
+}
+
+String GetCurrentTimestamp()
+{
+  if (RTC.updateTime() == false) //Updates the time variables from RTC
+  {
+  Serial.println("RTC failed to update");
+  }
+  //char currentTimestamp[20]; //allocate 20 bytes to store current timestamp
+  return RTC.stringTimeStamp(); //Get the current timestamp from RTC
+}
+
